@@ -60,7 +60,8 @@ stan_nbinom_type1 <- "
 
 # example
 
-
+if(FALSE) {
+    
 library(dplyr)
 library(tidyr)
 
@@ -89,7 +90,7 @@ nbinom_type1_vars <- stanvar(scode = stan_nbinom_type1, block = "functions")
 get_prior(y ~ 0 + Intercept + x,
     family = nbinom_type1(),
     data = data,
-    stanvars = nbinom_type1_vars
+    stanvar = nbinom_type1_vars
     )
 
 bprior1 <- prior(gamma(0.01, 0.01), class = "b", lb = 0) +
@@ -135,3 +136,4 @@ model_test1 |> conditional_effects(method = "posterior_predict")
 model_test2 |> conditional_effects(method = "posterior_predict")
 
 loo(model_test1, model_test2)
+}
