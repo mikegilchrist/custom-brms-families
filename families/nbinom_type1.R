@@ -4,9 +4,8 @@
 ##
 ## x ~ nbinom_type1(mu, theta), where E(x) = mu, Var(x) = (theta + 1) mu
 ## This should not be confused with the mu and shape parameterization of nbinom in R or the 'alternative' NB (neg_binomial_2_...) in stan
-## Note using disp instead of theta because using theta gives the error
-## > Error: Currently 'dirichlet' is the only valid prior for simplex parameters. See help(set_prior) for more details.
-## when trying to fit the model.
+## Note using disp instead of theta because using theta is a reserved term in `brms`
+
 library(brms) 
 
 # helper functions for post-processing of the family
@@ -17,7 +16,7 @@ log_lik_nbinom_type1 <- function(i, prep) {
   {disp <- prep$dpars$disp[, i]}   ## [, i] if disp is modelled, without otherwise
   y <- prep$data$Y[i]
   size = mu/disp
-  Vectorize(dnbinom)(x = y, mu = mu, size = size, log = TRUE)
+  dnbinom(x = y, mu = mu, size = size, log = TRUE) + log(mu) - 2 log(disp)
 }
 
 
@@ -43,15 +42,15 @@ nbinom_type1 <- function(link_mu = "identity", link_disp = "identity")
  lb = c(0, 0),
  ub = c(NA, NA),
  type = "int" #category of response variable
-## log_lik = log_lik_nbionm_type1
-## posterior_predict = posterior_predict_nbionm_type1,
-## posterior_epred = posterior_epred_nbionm_type1
+ log_lik = log_lik_nbionm_type1
+ posterior_predict = posterior_predict_nbionm_type1,
+ posterior_epred = posterior_epred_nbionm_type1
 )
 
 # additionally required Stan code
 stan_nbinom_type1 <- "
   real nbinom_type1_lpmf(int y, real mu, real disp) {
-    return neg_binomial_2_lpmf(y | mu, mu/(disp));
+    return neg_binomial_2_lpmf(y | mu, mu/(disp)) + log(mu) - 2 * log(disp);
   }
   int nbinom_type1_rng(real mu, real disp) {
     return neg_binomial_2_rng(mu, mu/(disp));
