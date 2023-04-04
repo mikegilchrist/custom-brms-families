@@ -49,6 +49,7 @@ nbinom_type1 <- function(link_mu = "identity", link_disp = "identity")
 )
 
 # additionally required Stan code
+# Not clear if the arguments should be ints and reals (as in the stan documentation) instead of int and real
 stan_nbinom_type1 <- "
   real nbinom_type1_lpmf(int y, real mu, real disp) {
     return neg_binomial_2_lpmf(y | mu, mu/(disp));
