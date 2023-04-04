@@ -30,7 +30,7 @@ posterior_predict_nbinom_type1 <- function(i, prep, ...) {
   if(NCOL(prep$dpars$disp)==1){ disp <- prep$dpars$disp
   } else { disp <- prep$dpars$disp[, i] }   ## [, i] if disp is modelled, without otherwise
   size = mu/disp
-  rnbinom(n = 1, mu = mu, size = size)
+  rnbinom(n = prep$ndraws, mu = mu, size = size)
 }
 
 posterior_epred_nbinom_type1 <- function(prep) {
