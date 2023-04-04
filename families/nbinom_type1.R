@@ -95,8 +95,15 @@ if(run_examples) {
   ## fit models
   stanvar <- stanvar(scode = stan_nbinom_type1, block = "functions")
 
+  centered_intercept = FALSE
+  
+  if(centered_intercept) {
+    formula <- formula(y ~ 1 + x)
+  } else {
+    formula <- formula(y ~ 0 + Intercept + x)
+    }
   ## Std regression model
-  get_prior(y ~ 1 + x,
+  get_prior(formula = formula, 
             family = nbinom_type1(),
             data = data,
             stanvar = stanvar
@@ -106,24 +113,34 @@ if(run_examples) {
     prior(gamma(0.01, 0.01), class = "disp", lb = 0) +
     ## class intercept only works if you use `1 + ...`
     ## You cannot use it with `0 + Intercept + ...`
-    prior(gamma(0.01, 0.01), class = "Intercept", lb = 0)
+    if(centered_intercept) {
+      prior(gamma(0.01, 0.01), class = "Intercept", lb = 0)
+    } else {
+      NULL #prior(gamma(0.01, 0.01), class = "b", coef = "Intercept", lb = 0)
+    }
 
-
-
-  brm(y ~ 1 + x,
+  start_time <- Sys.time()
+  
+  brm(formula = formula,
       family = nbinom_type1(),
       data = data,
       stanvar = stanvar,
       prior = bprior1,
-      control = list(adapt_delta = 0.85,
+      control = list(adapt_delta = 0.95,
                      max_treedepth = 12),
       chains = nchains,
-      cores = ncores
+      cores = ncores,
+      iter = 1000
       ) -> model_test1
 
+
+  end_time <- Sys.time()
+  total-time <- end_time - start_time
+  print("Actual elapsed time", total-time)
+  
   ## Distributional regression model
 
-  get_prior(bf(y ~ 1 + x,
+  get_prior(bf(y ~ 0 + Intercept + x,
                disp ~ 0 + group),
             family = nbinom_type1(),
             data = data,
@@ -133,14 +150,14 @@ if(run_examples) {
   bprior2 <- prior(gamma(0.01, 0.01), class = "b", lb = 0) +
     prior(gamma(0.01, 0.01), dpar = "disp", lb = 0)
 
-  brm(bf(y ~ 1 + x,
+  brm(bf(y ~ 0 + Intercept + x,
          disp ~ 0 + group),
       family = nbinom_type1(),
       data = data,
       stanvar = stanvar,
       prior = bprior2,
-      control = list(adapt_delta = 0.85,
-                     max_treedepth = 12),
+      control = list(adapt_delta = 0.95,
+                     max_treedepth = 14),
       chains = nchains,
       cores = ncores,
       ) -> model_test2
