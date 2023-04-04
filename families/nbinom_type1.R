@@ -30,7 +30,7 @@ posterior_predict_nbinom_type1 <- function(i, prep, ...) {
   if(NCOL(prep$dpars$disp)==1){ disp <- prep$dpars$disp
   } else { disp <- prep$dpars$disp[, i] }   ## [, i] if disp is modelled, without otherwise
   size = mu/disp
-  rnbinom(n = 1, mu = mu, size = size)
+  rnbinom(n = prep$ndraws, mu = mu, size = size)
 }
 
 posterior_epred_nbinom_type1 <- function(prep) {
@@ -53,6 +53,7 @@ nbinom_type1 <- function(link_mu = "identity", link_disp = "identity")
 )
 
 # additionally required Stan code
+# Not clear if the arguments should be ints and reals (as in the stan documentation) instead of int and real
 stan_nbinom_type1 <- "
   real nbinom_type1_lpmf(int y, real mu, real disp) {
     return neg_binomial_2_lpmf(y | mu, mu/(disp)) + log(mu) - 2 * log(disp);
