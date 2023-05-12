@@ -30,7 +30,7 @@ log_lik_nbinom_typep <- function(i, prep) {
   llik <- function(y, mu, kappa, p) {
     mu2mp <- mu^(2-p)
     s <- mu/(mu + mu2mp/kappa)
-    lpmf <- lgamma(mu2mp/kappa + y) + (mu2mp/kappa) * log(s) + y * log(1-s) - lgamma(y + 1) - lgamma(mu2mp/kappa)
+    lpmf <- lgamma(mu2mp/kappa + y) + (mu2mp/kappa) * log(s) + y * log(1-s) - lgamma(y + 1) - lgamma(mu2mp/kappa) - 2 * log(kappa)
     return(lpmf)
   }
   
@@ -135,17 +135,21 @@ nbinom_type2 <- function(link_mu = "identity", link_kappa = "identity")
 # Not clear if the arguments should be ints and reals (as in the stan documentation) instead of int and real
 stan_nbinom_typep <- "
  real nbinom_typep_lpmf(int y, real mu, real kappa, real p) {
-    // Formula based on eq 2-14 in Greene (2008)
+    // Formula based on eq 2-14 in Greene (2008) which uses the theta formulation for the pdf
     // NEGBIN 1 is when the generalized NEGBIN P has p = 1
-    // Note: kappa = kappa = 1/theta
-    //       mu = lambda
+    // Note: mu = lambda
+    //       kappa = 1/theta
+    // and g^(-1)(kappa) = theta = 1/kappa
+    //     d g^(-1)/d kappa = -1/kappa^2
+    // Thus, 
     real mu2mp = mu^(2 - p);
     real s = mu/(mu + mu2mp/kappa);
     real lpmf = lgamma(mu2mp/kappa + y)
                  + (mu2mp/kappa) * log(s)
                  + y * log(1-s)
                  - lgamma(y + 1)
-                 - lgamma(mu2mp/kappa);
+                 - lgamma(mu2mp/kappa)
+                 - 2 * log(kappa);
      return lpmf;
   }
 
@@ -240,7 +244,7 @@ if(run_examples) {
                      max_treedepth = 12),
       chains = nchains,
       cores = ncores,
-      iter = 10000
+      iter = 5000
       ) -> model_test1
 
 
