@@ -12,6 +12,15 @@ run_examples <- TRUE
 # helper functions for post-processing of the family
 # cribbed from lognormal_natural.R
 
+## function called 
+llik_nbinom_typep <- function(y, mu, kappa, p) {
+  mu2mp <- mu^(2-p)
+  s <- mu/(mu + mu2mp/kappa)
+  lpmf <- lgamma(mu2mp/kappa + y) + (mu2mp/kappa) * log(s) + y * log(1-s) - lgamma(y + 1) - lgamma(mu2mp/kappa) - 2 * log(kappa)
+  return(lpmf)
+} %>% Vectorize()
+
+
 log_lik_nbinom_typep <- function(i, prep) {
   mu <- prep$dpars$mu[, i]
   if(NCOL(prep$dpars$kappa)==1) {
@@ -27,16 +36,8 @@ log_lik_nbinom_typep <- function(i, prep) {
   }   ## [, i] if p is modelled, without otherwise
   
   y <- prep$data$Y[i]
-  llik <- function(y, mu, kappa, p) {
-    mu2mp <- mu^(2-p)
-    s <- mu/(mu + mu2mp/kappa)
-    lpmf <- lgamma(mu2mp/kappa + y) + (mu2mp/kappa) * log(s) + y * log(1-s) - lgamma(y + 1) - lgamma(mu2mp/kappa) - 2 * log(kappa)
-    return(lpmf)
-  }
   
-  llik(y, mu, kappa, p)
-  Vectorize(llik(y, mu, kappa, p) )
-  
+  llik_nbinom_typep(y, mu, kappa, p)
 }
 
 log_lik_nbinom_type1 <- function(i, prep) {
@@ -209,7 +210,7 @@ if(run_examples) {
   ## fit models
   stanvar <- stanvar(scode = stan_nbinom_typep, block = "functions")
 
-  centered_intercept = FALSE
+  centered_intercept = TRUE
   
   if(centered_intercept) {
     formula <- formula(y ~ 1 + x)
@@ -223,12 +224,12 @@ if(run_examples) {
             stanvar = stanvar
             )
 
-  bprior1 <- prior(gamma(0.01, 0.01), class = "b", lb = 0) +
-    prior(gamma(0.01, 0.01), class = "kappa", lb = 0) +
+  bprior1 <- prior(cauchy(0, 5), class = "b", lb = 0) +
+    prior(cauchy(0, 5), class = "kappa", lb = 0) +
     ## class intercept only works if you use `1 + ...`
     ## You cannot use it with `0 + Intercept + ...`
     if(centered_intercept) {
-      prior(gamma(0.01, 0.01), class = "Intercept", lb = 0)
+      prior(cauchy(0, 5), class = "Intercept", lb = 0)
     } else {
       NULL #prior(gamma(0.01, 0.01), class = "b", coef = "Intercept", lb = 0)
     }
@@ -240,11 +241,11 @@ if(run_examples) {
       data = data1,
       stanvar = stanvar,
       prior = bprior1,
-      control = list(adapt_delta = 0.95,
+      control = list(adapt_delta = 0.85,
                      max_treedepth = 12),
       chains = nchains,
       cores = ncores,
-      iter = 5000
+      iter = 1000
       ) -> model_test1
 
 
