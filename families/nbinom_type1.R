@@ -11,10 +11,6 @@ library(shinybrms)
 
 run_examples <- TRUE
 
-llik_nbinom_type1 <- function(y, mu, disp) {
-    ##d size/d disp = - mu/disp^2; so need to include log(mu) and -2 * log(disp) in the LLik
-    dnbinom(x = y, mu = mu, size = mu/disp, log = TRUE) + log(mu) - 2 * log(disp)} %>% Vectorize()
-
 # helper functions for post-processing of the family
 # cribbed from lognormal_natural.R
 log_lik_nbinom_type1 <- function(i, prep) {
@@ -23,7 +19,7 @@ log_lik_nbinom_type1 <- function(i, prep) {
       disp <- prep$dpars$disp
   } else { disp <- prep$dpars$disp[, i] }   ## [, i] if disp is modelled, without otherwise
   y <- prep$data$Y[i]
-  llik_nbinom_type1(y, mu, disp)  
+  Vectorize(dnbinom)(x = y, mu = mu, size = mu/disp, log = TRUE)
 }
 
 
@@ -167,84 +163,56 @@ if(run_examples) {
   print(paste("Wall time", total_time))
   summary(model_test1)
 
+
   model <- model_test1
   #model <- update(model_test1, ...)
-  
+
+  plot(model)
   ## Generate epred and plot
   data_grid <- data1 %>%
-    data_grid(x = seq_range(c(0, 50), n = 100))
+    data_grid(x = seq_range(c(1, 51), n = 200))
   
   data_epred <- add_epred_draws(newdata = data_grid, object = model)
-
   plot_epred <- ggplot(data = data_epred, aes(x = x, y = .epred)) + 
     ## Combine Scatter Plots and Model vs Data Plots
-    stat_lineribbon(aes(y = .epred), .width = c(.95, .8, 0.5, 0.25), color = "#08519C") +
-    scale_fill_brewer(palette = "Greys") +
     geom_point(data = data1,
-               aes(x = x, y = y), color = "red") + 
+               aes(x = x, y = y), color = "red") +
+    stat_lineribbon(aes(y = .epred), .width = c(.95, .8, 0.5, 0.25), color = "#08519C") +
+#    scale_fill_brewer(palette = "Greys") +
     labs(title = "Expected Values") + 
-    ylim(0, max(data1$y)*1.1)
+    ylim(0, max(data1$y)*1.05)
 
-  plot_epred()
+  plot_epred
   ## Generate predictions and plot
   data_pred <- add_predicted_draws(newdata = data_grid, object = model)
     
   
   plot_pred <- ggplot(data = data_pred, aes(x = x, y = .prediction)) + #, color = male)) +
     ## Combine Scatter Plots and Model vs Data Plots
-    stat_lineribbon(aes(y = .prediction), .width = c(.95, .8, .5, 0.25), color = "#08519C") +
-    scale_fill_brewer(palette = "Greys", direction =  -1) + 
-    geom_point(data = data1, aes(x = x, y = y), color = "red") +
+    geom_jitter(data = data1, aes(x = x, y = y), color = "red") +
+    stat_lineribbon(aes(y = .prediction), .width = c(.95, .8, .5, 0.25), color = "#08519C", alpha = 0.5) +
+    scale_fill_brewer(palette = "Greys", direction =  -1) +
     labs(title = "Predicted Values & Data") + 
     ylim(0, max(data1$y)*1.1)
 
   plot_pred
   
-#  y_max <- max(data_pred$y)*1.1
-  
-  ## To avoid recompiling when changing prior, define priors with a variable and set variable values using data2 
-  ## update(model_test1, init = 0, control = list(adapt_delta = 0.8))
-  ## get_inits() for rstan objects. 
+  # End simple fit
 
-  
-  ## Mixture data
+
+  ## Fit Mixture data
   ### define variables
   group <- c(1:2)
   x <- 0:50
   theta <- c(2,5)
 
   ## Create data
-  data2 <- crossing(group, rep = 1:4, x = x) %>%
+  data2 <- crossing(group, rep = 1:100, x = x) %>%
     mutate(mu = 10*(1 + x), theta = theta[group]) %>%
     rowwise() %>%
     mutate(y = rnbinom(n = 1, mu = mu, size = mu/theta),
            group = factor(group)) %>%
     select(-c(mu, theta))
-
-## fit models
-  stanvar <- stanvar(scode = stan_nbinom_type1, block = "functions")
-  
-  if(centered_intercept) {
-    formula <- formula(y ~ 1 + x)
-  } else {
-    formula <- formula(y ~ 0 + Intercept + x)
-    }
-  ## Std regression model
-  get_prior(formula = formula, 
-            family = nbinom_type1(),
-            data = data2,
-            stanvar = stanvar
-            )
-
-  bprior2 <- prior(gamma(0.01, 0.01), class = "b", lb = 0) +
-    prior(gamma(0.01, 0.01), class = "disp", lb = 0.1) +
-    ## class intercept only works if you use `1 + ...`
-    ## You cannot use it with `0 + Intercept + ...`
-    if(centered_intercept) {
-      prior(gamma(0.01, 0.01), class = "Intercept", lb = 0.1)
-    } else {
-      NULL #prior(gamma(0.01, 0.01), class = "b", coef = "Intercept", lb = 0)
-    }
 
   start_time <- Sys.time()
   
@@ -252,9 +220,8 @@ if(run_examples) {
       family = nbinom_type1(),
       data = data2,
       stanvar = stanvar,
-      prior = bprior2,
-      control = list(adapt_delta = 0.95,
-                     max_treedepth = 12),
+      prior = bprior1,
+      control = list(adapt_delta = 0.8),
       chains = nchains,
       cores = ncores,
       iter = 1000
@@ -268,39 +235,15 @@ if(run_examples) {
   
 
 
-  ## fit models
-  stanvar <- stanvar(scode = stan_nbinom_type1, block = "functions")
-
-  if(centered_intercept) {
-    formula <- formula(y ~ 1 + x)
-  } else {
-    formula <- formula(y ~ 0 + Intercept + x)
-    }
-  ## Std regression model
-  get_prior(formula = formula, 
-            family = nbinom_type1(),
-            data = data2,
-            stanvar = stanvar
-            )
-
-  bprior2 <- prior(gamma(0.01, 0.01), class = "b", lb = 0) +
-    prior(gamma(0.01, 0.01), class = "disp", lb = 0) +
-    ## class intercept only works if you use `1 + ...`
-    ## You cannot use it with `0 + Intercept + ...`
-    if(centered_intercept) {
-      prior(gamma(0.01, 0.01), class = "Intercept", lb = 0)
-    } else {
-      NULL #prior(gamma(0.01, 0.01), class = "b", coef = "Intercept", lb = 0)
-    }
-
+  ## fit disp ~ group models
   start_time <- Sys.time()
   
   brm(formula = formula,
       family = nbinom_type1(),
       data = data2,
       stanvar = stanvar,
-      prior = bprior2,
-      control = list(adapt_delta = 0.95,
+      prior = bprior1,
+      control = list(adapt_delta = 0.8,
                      max_treedepth = 12),
       chains = nchains,
       cores = ncores,
@@ -321,8 +264,8 @@ if(run_examples) {
             stanvar = stanvar
             )
 
-  bprior3 <- prior(gamma(0.01, 0.01), class = "b", lb = 0) +
-    prior(gamma(0.01, 0.01), dpar = "disp", lb = 0)
+  bprior3 <- prior(uniform(0, 200), class = "b", lb = 0, ub = 200) +
+    prior(uniform(0, 200), dpar = "disp", lb = 0, ub = 200)
 
   brm(bf(y ~ 0 + Intercept + x,
          disp ~ 0 + group),
@@ -330,8 +273,7 @@ if(run_examples) {
       data = data2,
       stanvar = stanvar,
       prior = bprior3,
-      control = list(adapt_delta = 0.95,
-                     max_treedepth = 14),
+      control = list(adapt_delta = 0.8),
       chains = nchains,
       cores = ncores,
       ) -> model_test3
@@ -345,5 +287,8 @@ if(run_examples) {
   model_test2 |> conditional_effects(method = "posterior_predict")
   model_test3 |> conditional_effects(method = "posterior_predict")
 
+
+  ## Get 10,000s of warnings
+  ## > Warning in formals(fun) : argument is not a function
   loo(model_test2, model_test3)
 }
