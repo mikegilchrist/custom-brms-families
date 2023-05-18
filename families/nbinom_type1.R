@@ -13,13 +13,16 @@ run_examples <- TRUE
 
 # helper functions for post-processing of the family
 # cribbed from lognormal_natural.R
+# I don't understand the utility of vectorizing given
+# Only one y, mu, and size value are passed
 log_lik_nbinom_type1 <- function(i, prep) {
   mu <- prep$dpars$mu[, i]
   if(NCOL(prep$dpars$disp)==1) {
       disp <- prep$dpars$disp
   } else { disp <- prep$dpars$disp[, i] }   ## [, i] if disp is modelled, without otherwise
   y <- prep$data$Y[i]
-  Vectorize(dnbinom)(x = y, mu = mu, size = mu/disp, log = TRUE)
+  ##Vectorize(dnbinom)(x = y, mu = mu, size = mu/disp, log = TRUE)
+  dnbinom(x = y, mu = mu, size = mu/disp, log = TRUE)
 }
 
 
@@ -103,13 +106,8 @@ if(run_examples) {
     rowwise() %>%
     mutate(y = rnbinom(n = 1, mu = mu, size = mu/theta),
            group = factor(group))
-  #%>%
-   # select(-c(mu, theta))
 
-  data_tmp <- data1 %>% group_by(x) %>% summarize(var = var(y), mean = mean(y))
   ## fit models
-
-
   if(centered_intercept) {
     formula <- formula(y ~ 1 + x)
   } else {
@@ -137,6 +135,7 @@ if(run_examples) {
   ## get_inits(fit)
   ##
   ##
+
   init <- 0
   #init <- rep(list(list(b = c(10, 10), disp = 5)), nchains)
   
@@ -201,6 +200,8 @@ if(run_examples) {
 
 
   ## Fit Mixture data
+
+  ## All observations from single group
   ### define variables
   group <- c(1:2)
   x <- 0:50
@@ -236,26 +237,6 @@ if(run_examples) {
 
 
   ## fit disp ~ group models
-  start_time <- Sys.time()
-  
-  brm(formula = formula,
-      family = nbinom_type1(),
-      data = data2,
-      stanvar = stanvar,
-      prior = bprior1,
-      control = list(adapt_delta = 0.8,
-                     max_treedepth = 12),
-      chains = nchains,
-      cores = ncores,
-      iter = 1000
-      ) -> model_test2
-
-
-  end_time <- Sys.time()
-  total_time <- end_time - start_time
-  print(paste("Wall time", total_time))
-  
-  ## Distributional regression model
 
   get_prior(bf(y ~ 0 + Intercept + x,
                disp ~ 0 + group),
@@ -288,7 +269,5 @@ if(run_examples) {
   model_test3 |> conditional_effects(method = "posterior_predict")
 
 
-  ## Get 10,000s of warnings
-  ## > Warning in formals(fun) : argument is not a function
   loo(model_test2, model_test3)
 }
