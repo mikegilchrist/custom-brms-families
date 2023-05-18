@@ -9,7 +9,7 @@
 library(brms) 
 library(shinybrms)
 
-run_examples <- TRUE
+run_examples <- FALSE
 
 # helper functions for post-processing of the family
 # cribbed from lognormal_natural.R
