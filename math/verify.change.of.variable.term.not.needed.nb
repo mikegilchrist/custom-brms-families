@@ -1,0 +1,134 @@
+Notebook[{
+Cell["\<\
+Purpose: Validate type1 formulation of NBinom does not need change of \
+variable term for size = mu/phi\
+\>", "Text",
+ CellChangeTimes->{{3.8933315158387547`*^9, 3.893331516019937*^9}, {
+  3.893412065007062*^9, 
+  3.893412114159586*^9}},ExpressionUUID->"89f92e9d-3001-4d41-aa89-\
+8b47966fc60a"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Clear", "[", "PMF", "]"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{"Define", " ", "Pr", " ", "Mass", " ", "Function"}], " ", 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"PMF", "[", 
+    RowBox[{"y_", ",", " ", "phi_", ",", " ", "mu_"}], "]"}], ":=", " ", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Gamma", "[", 
+      RowBox[{"y", "+", 
+       RowBox[{"mu", "/", "phi"}]}], "]"}], "/", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"Gamma", "[", 
+        RowBox[{"y", "+", "1"}], "]"}], " ", 
+       RowBox[{"Gamma", "[", 
+        RowBox[{"mu", "/", "phi"}], "]"}]}], ")"}]}], " ", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"phi", "/", 
+       RowBox[{"(", 
+        RowBox[{"1", "+", "phi"}], ")"}]}], ")"}], "^", "y"}], " ", 
+    SuperscriptBox[
+     RowBox[{"(", 
+      RowBox[{"1", "/", 
+       RowBox[{"(", 
+        RowBox[{"1", "+", "phi"}], ")"}]}], ")"}], 
+     FractionBox["mu", "phi"]]}]}], "\[IndentingNewLine]", 
+  "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{"Ensure", " ", "Pr", 
+    RowBox[{"(", ")"}], " ", "sums", " ", "to", " ", "1"}], " ", 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Sum", "[", 
+   RowBox[{
+    RowBox[{"PMF", "[", 
+     RowBox[{"y", ",", "phi", ",", " ", "mu"}], "]"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"y", ",", "0", ",", "\[Infinity]"}], "}"}]}], "]"}], 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"Ensure", " ", "E", 
+     RowBox[{"(", "y", ")"}]}], " ", "=", " ", "mu"}], " ", 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Sum", "[", 
+    RowBox[{
+     RowBox[{"y", " ", "*", 
+      RowBox[{"PMF", "[", 
+       RowBox[{"y", ",", " ", "phi", ",", " ", "mu"}], "]"}]}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"y", ",", " ", "0", ",", " ", "\[Infinity]"}], "}"}]}], "]"}], "//",
+    "FullSimplify"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"ensure", " ", "var"}], " ", "=", " ", 
+    RowBox[{"mu", " ", 
+     RowBox[{"(", 
+      RowBox[{"1", " ", "+", " ", "phi"}], ")"}]}]}], " ", 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Sum", "[", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"y", "-", "mu"}], ")"}], "^", "2"}], "*", 
+     RowBox[{"PMF", "[", 
+      RowBox[{"y", ",", "phi", ",", "mu"}], "]"}]}], ",", 
+    RowBox[{"{", 
+     RowBox[{"y", ",", "0", ",", "\[Infinity]"}], "}"}]}], "]"}], "//", 
+  "FullSimplify"}]}], "Input",
+ CellChangeTimes->{{3.8933376628182383`*^9, 3.893337708128916*^9}, {
+  3.893337756994186*^9, 3.8933378311547318`*^9}, {3.89333788886769*^9, 
+  3.893338017766294*^9}, {3.893338179081113*^9, 3.893338200007721*^9}, {
+  3.893339063027891*^9, 3.8933390755223713`*^9}, {3.893339114644866*^9, 
+  3.8933391619084473`*^9}, {3.893339226021821*^9, 3.893339241397697*^9}, {
+  3.8933392925025167`*^9, 3.893339317989356*^9}, {3.893411988708305*^9, 
+  3.893412054656783*^9}},ExpressionUUID->"99efe6e8-1516-41a7-8d56-\
+783e7ef95b87"],
+
+Cell[BoxData["1"], "Output",
+ CellChangeTimes->{
+  3.8933379311075373`*^9, 3.893338024693243*^9, 3.893339125450473*^9, 
+   3.8933391654127703`*^9, 3.893339245656891*^9, {3.8933392964358053`*^9, 
+   3.893339318603868*^9}},
+ CellLabel->"Out[23]=",ExpressionUUID->"b4faede4-19ae-497a-bb0d-f18686c90406"],
+
+Cell[BoxData["mu"], "Output",
+ CellChangeTimes->{
+  3.8933379311075373`*^9, 3.893338024693243*^9, 3.893339125450473*^9, 
+   3.8933391654127703`*^9, 3.893339245656891*^9, {3.8933392964358053`*^9, 
+   3.893339318617633*^9}},
+ CellLabel->"Out[24]=",ExpressionUUID->"081b2596-b8ee-48a7-8f9b-031465622a6d"],
+
+Cell[BoxData[
+ RowBox[{"mu", " ", 
+  RowBox[{"(", 
+   RowBox[{"1", "+", "phi"}], ")"}]}]], "Output",
+ CellChangeTimes->{
+  3.8933379311075373`*^9, 3.893338024693243*^9, 3.893339125450473*^9, 
+   3.8933391654127703`*^9, 3.893339245656891*^9, {3.8933392964358053`*^9, 
+   3.893339318906377*^9}},
+ CellLabel->
+  "Out[25]=",ExpressionUUID->"56c337db-6de7-4338-87a6-7bd9c9d03ad3"]
+}, Open  ]]
+},
+WindowSize->{605.940594059406, 683.6435643564357},
+WindowMargins->{{496.1584158415842, Automatic}, {
+  Automatic, 178.21782178217822`}},
+FrontEndVersion->"13.0 for Linux x86 (64-bit) (February 4, 2022)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"05bc203f-45a1-4252-ba0e-3f190c9bea2e"
+]
+
